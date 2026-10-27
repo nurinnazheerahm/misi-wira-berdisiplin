@@ -53,6 +53,7 @@
     <div class="stats">
       <div class="stat">⭐ BINTANG: <span id="stars">0</span>/7</div>
       <div class="stat">🏅 SKOR: <span id="score">0</span></div>
+      <div class="stat">✨ KUTIPAN: <span id="bonusStars">0</span></div>
     </div>
   </header>
 
@@ -64,10 +65,10 @@
       <div class="card">
         <span class="pixel-tag">PENGEMBARAAN PLATFORMER 2D</span>
         <h1>MISI WIRA<br>BERDISIPLIN</h1>
-        <p>Bandar Pixel memerlukan bantuanmu! Lepasi halangan, jawab 7 cabaran disiplin diri dan kumpulkan bintang untuk membuka lencana Wira Berdisiplin.</p>
+        <p>Bandar Pixel memerlukan bantuanmu! Elakkan zombi, lompat di atas titi, kumpulkan bintang, dan jawab 7 cabaran disiplin diri untuk membuka lencana Wira Berdisiplin.</p>
         <label for="playerName" style="display:block;text-align:left;font-size:12px;font-weight:900;margin:14px 0 5px">NAMA WIRA</label>
         <input id="playerName" maxlength="20" placeholder="Contoh: Wira Cilik" style="width:100%;background:#06153b;border:2px solid #39d9ff;border-radius:7px;padding:12px;color:white;font-size:16px">
-        <p class="hint">Kawalan: Anak panah atau WASD untuk bergerak. Space, ↑ atau W untuk melompat. Pada telefon, gunakan butang kawalan di bawah.</p>
+        <p class="hint">Kawalan: Anak panah atau WASD untuk bergerak. Space, ↑ atau W untuk melompat. Elakkan zombi, lompat atas titi dan kutip bintang! Pada telefon, gunakan butang kawalan di bawah.</p>
         <button class="btn" id="startBtn">▶ MULA MISI!</button>
       </div>
     </div>
@@ -102,7 +103,7 @@
   </div>
 
   <div class="controls">
-    <div class="hint">Tip: Bergerak ke kanan untuk mencari portal cabaran. Apabila bertemu portal, jawab soalan untuk meneruskan perjalanan.</div>
+    <div class="hint">Tip: Bergerak ke kanan, lompat atas titi, elakkan zombi dan kutip bintang bonus. Sentuh portal untuk menjawab soalan.</div>
     <div class="music">
       <button class="btn secondary" id="musicBtn">♫ MAIN LAGU</button>
       <input id="musicUrl" type="url" placeholder="Tampal pautan terus MP3 di sini (pilihan)" aria-label="Pautan MP3">
@@ -130,13 +131,21 @@
     {topic:"WIRA BERDISIPLIN", text:"Kamu tersilap semasa melakukan tugasan. Apakah pilihan yang menunjukkan disiplin diri?", choices:["Sembunyikan kesilapan","Akui kesilapan, baiki dan cuba lagi","Katakan semua orang lain salah"], correct:1, explain:"Tahniah! Wira berdisiplin berani mengakui kesilapan dan berusaha memperbaikinya."}
   ];
   let playerName = "Wira Cilik", running = false, paused = false, gameOver = false;
-  let score = 0, stars = 0, nextQ = 0, cameraX = 0, lastTime = 0;
+  let score = 0, stars = 0, bonusStars = 0, nextQ = 0, cameraX = 0, lastTime = 0, hurtTimer = 0;
   const keys = {left:false,right:false,jump:false};
   const worldWidth = 4300;
   const player = {x:55,y:350,w:28,h:38,vx:0,vy:0,onGround:false,face:1};
-  const platforms = [{x:0,y:425,w:worldWidth,h:75}];
+  const platforms = [];
   const pits = [];
   for(let x=430;x<worldWidth-200;x+=620){ pits.push({x:x+235,w:90}); }
+  // Titi pixel diletakkan di atas setiap lubang; pemain perlu melompat untuk naik ke atasnya.
+  const bridges = pits.map((p,i)=>({x:p.x-18,y:i%2===0?365:345,w:p.w+36,h:14}));
+  // Zombi bergerak ulang-alik sebagai halangan yang perlu dielakkan.
+  const zombies = [];
+  for(let i=0;i<7;i++) zombies.push({x:245+i*570,y:389,w:30,h:36,base:245+i*570,range:65,phase:i*1.7,hit:false});
+  // Bintang bonus boleh dikutip sepanjang perjalanan; ia menambah skor bonus.
+  const collectibles = [];
+  for(let i=0;i<14;i++) collectibles.push({x:150+i*285,y:(i%3===0?315:(i%3===1?365:390)),r:10,collected:false,phase:i*.8});
   const portals = [];
   for(let i=0;i<7;i++) portals.push({x:360+i*570,y:365,w:44,h:60,q:i,done:false});
   const blocks = [];
@@ -147,11 +156,11 @@
 
   function show(id){$(id).style.display="flex"}
   function hide(id){$(id).style.display="none"}
-  function setStats(){$("stars").textContent=stars;$("score").textContent=score;$("missionLabel").textContent=`MISI ${Math.min(nextQ+1,7)} / 7`;}
+  function setStats(){$("stars").textContent=stars;$("score").textContent=score;$("bonusStars").textContent=bonusStars;$("missionLabel").textContent=`MISI ${Math.min(nextQ+1,7)} / 7`;}
   function reset(){
-    score=0;stars=0;nextQ=0;cameraX=0;running=false;paused=false;gameOver=false;
+    score=0;stars=0;bonusStars=0;nextQ=0;cameraX=0;running=false;paused=false;gameOver=false;hurtTimer=0;
     player.x=55;player.y=350;player.vx=0;player.vy=0;player.onGround=false;
-    portals.forEach(p=>p.done=false);setStats();hide("questionScreen");hide("endScreen");show("startScreen");
+    portals.forEach(p=>p.done=false);collectibles.forEach(s=>s.collected=false);zombies.forEach((z,i)=>{z.x=z.base;z.hit=false;z.phase=i*1.7});setStats();hide("questionScreen");hide("endScreen");show("startScreen");
   }
   function start(){
     playerName=($("playerName").value.trim()||"Wira Cilik").slice(0,20);
@@ -191,7 +200,7 @@
   function finish(){
     running=false;gameOver=true;show("endScreen");
     $("endMessage").textContent=`${playerName}, kamu telah menyelesaikan semua 7 cabaran di Bandar Pixel!`;
-    $("finalScore").textContent=`⭐ ${stars} / 7 BINTANG  •  🏅 ${score} MATA`;
+    $("finalScore").textContent=`⭐ ${stars} / 7 JAWAPAN BETUL  •  ✨ ${bonusStars} BINTANG BONUS  •  🏅 ${score} MATA`;
   }
   function update(dt){
     if(!running||paused)return;
@@ -208,8 +217,28 @@
     const oldY=player.y;player.y+=player.vy;player.onGround=false;
     let overPit=false;
     pits.forEach(p=>{if(player.x+player.w>p.x&&player.x<p.x+p.w)overPit=true});
-    if(player.y+player.h>=425&&!overPit&&oldY+player.h<=430){player.y=425-player.h;player.vy=0;player.onGround=true}
-    if(player.y>H+80){player.x=Math.max(30,player.x-120);player.y=320;player.vy=0}
+    // Mendarat di atas titi jika pemain jatuh dari atasnya.
+    let landedOnBridge=false;
+    if(player.vy>=0){
+      bridges.forEach(b=>{
+        if(player.x+player.w>b.x&&player.x<b.x+b.w&&oldY+player.h<=b.y+5&&player.y+player.h>=b.y){
+          player.y=b.y-player.h;player.vy=0;player.onGround=true;landedOnBridge=true;
+        }
+      });
+    }
+    if(!landedOnBridge&&player.y+player.h>=425&&!overPit&&oldY+player.h<=430){player.y=425-player.h;player.vy=0;player.onGround=true}
+    if(player.y>H+80){player.x=Math.max(30,player.x-120);player.y=320;player.vy=0;player.vx=0}
+    // Kutip bintang bonus dengan menyentuhnya.
+    collectibles.forEach(s=>{
+      if(!s.collected&&Math.abs((player.x+player.w/2)-s.x)<22&&Math.abs((player.y+player.h/2)-s.y)<28){s.collected=true;bonusStars++;score+=25;setStats()}
+    });
+    // Sentuhan zombi menolak wira ke belakang seketika; wira boleh cuba lagi.
+    if(hurtTimer>0)hurtTimer-=dt;
+    zombies.forEach(z=>{
+      z.x=z.base+Math.sin(performance.now()/520+z.phase)*z.range;
+      const touching=player.x+player.w>z.x&&player.x<z.x+z.w&&player.y+player.h>z.y&&player.y<z.y+z.h;
+      if(touching&&hurtTimer<=0){player.x=Math.max(0,player.x-70);player.vx=-2.5;player.vy=-5;score=Math.max(0,score-10);hurtTimer=65;setStats()}
+    });
     // Touch a portal to open its question in order.
     const p=portals[nextQ];
     if(p&&!p.done&&player.x+player.w>p.x&&player.x<p.x+p.w&&player.y+player.h>p.y-8)openQuestion(nextQ);
@@ -236,6 +265,28 @@
     else {rect(x+10,y+25,24,6,"#ffe36e");rect(x+18,y+17,7,22,"#ffe36e")}
     ctx.fillStyle="#eef7ff";ctx.font="bold 12px monospace";ctx.textAlign="center";ctx.fillText(p.done?"✓":String(p.q+1),x+22,y-10);
   }
+  function drawBridge(b){
+    const x=b.x-cameraX;if(x<-100||x>W+100)return;
+    // Titi kayu pixel berwarna biru dengan jalur bercahaya.
+    rect(x,b.y,b.w,b.h,"#7b4c38");rect(x,b.y,b.w,4,"#ffe36e");
+    for(let px=0;px<b.w;px+=18){rect(x+px,b.y+5,13,6,"#b8794a");rect(x+px+5,b.y+5,2,6,"#4a2a37")}
+    rect(x+3,b.y+b.h,b.w-6,4,"#39d9ff");
+  }
+  function drawZombie(z){
+    const x=z.x-cameraX,y=z.y;if(x<-60||x>W+60)return;
+    // Zombi kartun comel, bukan grafik menakutkan.
+    rect(x+7,y,16,5,"#9de58b");rect(x+3,y+5,24,15,"#63c96b");
+    rect(x+6,y+9,5,5,"#07102c");rect(x+19,y+9,5,5,"#07102c");
+    rect(x+9,y+17,12,3,"#efffb4");rect(x+4,y+20,22,10,"#385d88");
+    rect(x+5,y+30,8,6,"#9de58b");rect(x+18,y+30,8,6,"#9de58b");
+    rect(x,y+12,5,4,"#9de58b");rect(x+25,y+13,5,4,"#9de58b");
+  }
+  function drawCollectible(s){
+    if(s.collected)return;const x=s.x-cameraX,y=s.y+Math.sin(performance.now()/250+s.phase)*4;if(x<-30||x>W+30)return;
+    ctx.fillStyle="#ffe36e";ctx.beginPath();
+    for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2===0?s.r:s.r*.45;const px=x+Math.cos(a)*r,py=y+Math.sin(a)*r;k===0?ctx.moveTo(px,py):ctx.lineTo(px,py)}
+    ctx.closePath();ctx.fill();ctx.strokeStyle="#fff6b5";ctx.lineWidth=2;ctx.stroke();
+  }
   function draw(){
     // Sky gradient
     const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#06143a");g.addColorStop(1,"#0b3c83");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
@@ -249,6 +300,10 @@
     for(let x=0;x<W;x+=32){rect(x-cameraX%32,443,18,4,"#123b73");rect(x-cameraX%32+7,465,8,4,"#123b73")}
     // pits
     pits.forEach(p=>{let x=p.x-cameraX;if(x>-100&&x<W+100){rect(x,425,p.w,75,"#020817");rect(x,425,p.w,5,"#ff4f72");rect(x+12,446,12,5,"#8b1f56");rect(x+50,466,12,5,"#8b1f56")}});
+    // Titi, bintang bonus dan zombi
+    bridges.forEach(drawBridge);
+    collectibles.forEach(drawCollectible);
+    zombies.forEach(drawZombie);
     // small blocks
     blocks.forEach(b=>{let x=b.x-cameraX;if(x>-40&&x<W+40){rect(x,b.y,b.w,b.h,"#17478a");rect(x,b.y,b.w,5,"#39d9ff");rect(x+6,b.y+10,5,5,"#ffe36e");rect(x+15,b.y+10,5,5,"#ffe36e")}});
     portals.forEach(drawPortal);
