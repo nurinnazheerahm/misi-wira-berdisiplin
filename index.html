@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Misi Wira Berdisiplin</title>
+<style>
+  :root{
+    --navy:#06153b; --blue:#0b2d75; --cyan:#39d9ff; --yellow:#ffe36e;
+    --red:#ff4f72; --white:#eef7ff; --panel:#0a2054;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:#030b20;color:var(--white);font-family:system-ui,Arial,sans-serif}
+  .wrap{width:min(1100px,100%);margin:0 auto;padding:14px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+  .brand{font-weight:950;letter-spacing:1px;color:var(--yellow);text-shadow:3px 3px #b92b58;font-size:clamp(20px,3.5vw,34px)}
+  .sub{color:#a8d9ff;font-size:13px;margin-top:3px}
+  .stats{display:flex;gap:8px;flex-wrap:wrap}
+  .stat{background:#0b245b;border:2px solid #1e6eb4;padding:8px 12px;border-radius:8px;font-weight:800;font-size:13px}
+  .stage{position:relative;border:4px solid var(--cyan);border-radius:12px;overflow:hidden;background:#071942;box-shadow:0 0 25px #0b83c766}
+  canvas{display:block;width:100%;height:auto;image-rendering:pixelated;touch-action:pan-y}
+  .hud{position:absolute;top:10px;left:10px;right:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+  .hud span{background:#06153be8;border:1px solid #39d9ff88;border-radius:6px;padding:6px 9px;font-size:12px;font-weight:800}
+  .screen{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:14px;background:#04102bdc;z-index:4}
+  .card{width:min(570px,100%);max-height:100%;overflow:auto;background:linear-gradient(160deg,#103b88,#071943);border:3px solid var(--cyan);border-radius:12px;padding:clamp(16px,3vw,28px);box-shadow:7px 7px 0 #02091a;text-align:center}
+  .pixel-tag{display:inline-block;background:#06265c;border:1px solid #2ba9ff;padding:6px 10px;border-radius:5px;color:var(--cyan);font-weight:900;font-size:11px;letter-spacing:1px}
+  h1,h2{margin:10px 0;color:var(--yellow);text-shadow:2px 2px #b92b58}
+  h1{font-size:clamp(25px,5vw,42px);line-height:1.05}
+  h2{font-size:clamp(21px,4vw,30px)}
+  p{line-height:1.5}
+  .btn{border:2px solid #fff;background:var(--yellow);color:#08245d;font-weight:950;font-size:15px;padding:12px 18px;border-radius:7px;cursor:pointer;box-shadow:4px 4px 0 #02091a}
+  .btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  .btn.secondary{background:#103e8b;color:#fff;border-color:#49d8ff}
+  .answers{display:grid;gap:9px;margin-top:16px;text-align:left}
+  .answer{width:100%;text-align:left;background:#0a2a67;color:#fff;border:2px solid #3c91d8;border-radius:7px;padding:12px;font-weight:750;cursor:pointer}
+  .answer:hover,.answer:focus{border-color:var(--yellow);background:#15438e}
+  .answer:disabled{cursor:default;opacity:.95}
+  .feedback{min-height:30px;font-weight:850;color:var(--yellow);margin:12px 0 4px}
+  .controls{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
+  .hint{font-size:12px;color:#a8d9ff;line-height:1.5}
+  .music{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  input[type=url]{background:#06153b;border:1px solid #277dc0;border-radius:6px;color:white;padding:10px;width:min(330px,70vw)}
+  .mobile-controls{display:none;justify-content:center;gap:12px;margin-top:10px}
+  .pad{width:56px;height:48px;border:2px solid #39d9ff;background:#0a2a67;color:white;border-radius:8px;font-size:20px;font-weight:900;touch-action:none}
+  .footer{color:#729ecb;font-size:11px;text-align:center;margin:12px 0}
+  @media(max-width:650px){.wrap{padding:8px}.mobile-controls{display:flex}.stat{padding:7px 9px}.hud span{font-size:10px}.controls{align-items:flex-start}.music{width:100%}input[type=url]{width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div><div class="brand">MISI WIRA BERDISIPLIN</div><div class="sub">Pengembaraan pixel • Tahun 5 &amp; 6</div></div>
+    <div class="stats">
+      <div class="stat">⭐ BINTANG: <span id="stars">0</span>/7</div>
+      <div class="stat">🏅 SKOR: <span id="score">0</span></div>
+    </div>
+  </header>
+
+  <section class="stage" aria-label="Permainan platformer">
+    <canvas id="game" width="960" height="500" aria-label="Permainan Misi Wira Berdisiplin"></canvas>
+    <div class="hud"><span id="missionLabel">MISI 1 / 7</span><span>← → / A D: GERAK • SPACE / ↑ / W: LOMPAT</span></div>
+
+    <div class="screen" id="startScreen">
+      <div class="card">
+        <span class="pixel-tag">PENGEMBARAAN PLATFORMER 2D</span>
+        <h1>MISI WIRA<br>BERDISIPLIN</h1>
+        <p>Bandar Pixel memerlukan bantuanmu! Lepasi halangan, jawab 7 cabaran disiplin diri dan kumpulkan bintang untuk membuka lencana Wira Berdisiplin.</p>
+        <label for="playerName" style="display:block;text-align:left;font-size:12px;font-weight:900;margin:14px 0 5px">NAMA WIRA</label>
+        <input id="playerName" maxlength="20" placeholder="Contoh: Wira Cilik" style="width:100%;background:#06153b;border:2px solid #39d9ff;border-radius:7px;padding:12px;color:white;font-size:16px">
+        <p class="hint">Kawalan: Anak panah atau WASD untuk bergerak. Space, ↑ atau W untuk melompat. Pada telefon, gunakan butang kawalan di bawah.</p>
+        <button class="btn" id="startBtn">▶ MULA MISI!</button>
+      </div>
+    </div>
+
+    <div class="screen" id="questionScreen" style="display:none">
+      <div class="card">
+        <span class="pixel-tag" id="qTag">CABARAN 1 / 7</span>
+        <h2 id="qTitle">Cabaran Disiplin Diri</h2>
+        <p id="qText"></p>
+        <div class="answers" id="answers"></div>
+        <div class="feedback" id="feedback" aria-live="polite"></div>
+        <button class="btn" id="continueBtn" style="display:none">TERUSKAN MISI ➜</button>
+      </div>
+    </div>
+
+    <div class="screen" id="endScreen" style="display:none">
+      <div class="card">
+        <span class="pixel-tag">MISI SELESAI</span>
+        <h1>TAHNIAH, WIRA!</h1>
+        <p id="endMessage">Kamu berjaya menyelesaikan cabaran.</p>
+        <h2 id="finalScore">⭐ 0 / 7 BINTANG</h2>
+        <p>Ingat: wira berdisiplin berusaha mengawal tingkah laku, mengurus emosi dan bertanggungjawab atas tindakannya.</p>
+        <button class="btn" id="restartBtn">↻ MAIN SEMULA</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="mobile-controls" aria-label="Kawalan sentuh">
+    <button class="pad" data-key="left" aria-label="Gerak kiri">◀</button>
+    <button class="pad" data-key="right" aria-label="Gerak kanan">▶</button>
+    <button class="pad" data-key="jump" aria-label="Lompat">⬆</button>
+  </div>
+
+  <div class="controls">
+    <div class="hint">Tip: Bergerak ke kanan untuk mencari portal cabaran. Apabila bertemu portal, jawab soalan untuk meneruskan perjalanan.</div>
+    <div class="music">
+      <button class="btn secondary" id="musicBtn">♫ MAIN LAGU</button>
+      <input id="musicUrl" type="url" placeholder="Tampal pautan terus MP3 di sini (pilihan)" aria-label="Pautan MP3">
+    </div>
+  </div>
+  <div class="footer">Game pendidikan • Watak dan dunia pixel original • Muzik hanya dimainkan selepas ditekan</div>
+</div>
+
+<audio id="bgMusic" loop preload="none"></audio>
+
+<script>
+(() => {
+  "use strict";
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const W = canvas.width, H = canvas.height;
+  const $ = id => document.getElementById(id);
+  const questions = [
+    {topic:"KAWAL TINGKAH LAKU", text:"Kamu ternampak sampah di lantai kelas selepas aktiviti. Apakah tindakan wira berdisiplin?", choices:["Biarkan kerana bukan sampah sendiri","Kutiplah dan buang ke dalam tong sampah","Tendang sampah ke bawah meja"], correct:1, explain:"Betul! Menjaga kebersihan ialah contoh tingkah laku yang bertanggungjawab."},
+    {topic:"KAWAL EMOSI", text:"Kamu kalah dalam permainan bersama rakan. Apakah tindakan yang paling baik?", choices:["Marah dan menyalahkan rakan","Berhenti berkawan dengan mereka","Terima keputusan dan cuba lagi dengan tenang"], correct:2, explain:"Bagus! Kita boleh berasa kecewa, tetapi tetap perlu mengawal tindakan."},
+    {topic:"TANGGUNGJAWAB", text:"Kamu meminjam pensel warna rakan. Apakah yang patut kamu lakukan selepas menggunakannya?", choices:["Pulangkan dengan baik","Simpan kerana suka akan warnanya","Berikan kepada orang lain"], correct:0, explain:"Tepat! Memulangkan barang yang dipinjam menunjukkan sikap bertanggungjawab."},
+    {topic:"KAWAL TINGKAH LAKU", text:"Semasa guru menerangkan arahan aktiviti, apakah tindakan yang sesuai?", choices:["Berbual dengan rakan","Dengar arahan dan ikut peraturan","Bermain dengan alat tulis"], correct:1, explain:"Ya! Mendengar arahan membantu kita bertindak dengan tertib."},
+    {topic:"KAWAL EMOSI", text:"Rakan tidak sengaja terlanggar hasil kerja kamu. Apakah tindakan terbaik?", choices:["Terus menjerit kepadanya","Rosakkan barang rakan pula","Bertenang dan bercakap dengan baik"], correct:2, explain:"Bagus! Bertenang dan bercakap dengan baik membantu menyelesaikan masalah."},
+    {topic:"TANGGUNGJAWAB", text:"Kamu tertumpahkan air di meja aktiviti. Apakah yang patut kamu lakukan?", choices:["Beritahu orang dewasa dan bersihkan dengan selamat","Tinggalkan dan pergi bermain","Salahkan rakan yang berdekatan"], correct:0, explain:"Betul! Mengakui keadaan dan membantu membaikinya ialah sikap bertanggungjawab."},
+    {topic:"WIRA BERDISIPLIN", text:"Kamu tersilap semasa melakukan tugasan. Apakah pilihan yang menunjukkan disiplin diri?", choices:["Sembunyikan kesilapan","Akui kesilapan, baiki dan cuba lagi","Katakan semua orang lain salah"], correct:1, explain:"Tahniah! Wira berdisiplin berani mengakui kesilapan dan berusaha memperbaikinya."}
+  ];
+  let playerName = "Wira Cilik", running = false, paused = false, gameOver = false;
+  let score = 0, stars = 0, nextQ = 0, cameraX = 0, lastTime = 0;
+  const keys = {left:false,right:false,jump:false};
+  const worldWidth = 4300;
+  const player = {x:55,y:350,w:28,h:38,vx:0,vy:0,onGround:false,face:1};
+  const platforms = [{x:0,y:425,w:worldWidth,h:75}];
+  const pits = [];
+  for(let x=430;x<worldWidth-200;x+=620){ pits.push({x:x+235,w:90}); }
+  const portals = [];
+  for(let i=0;i<7;i++) portals.push({x:360+i*570,y:365,w:44,h:60,q:i,done:false});
+  const blocks = [];
+  for(let x=190;x<worldWidth-150;x+=210) blocks.push({x,y:395,w:25,h:30});
+  const buildings = [];
+  for(let x=0;x<worldWidth+500;x+=90) buildings.push({x,h:80+((x*17)%130),w:62});
+  const starsDecor = Array.from({length:80},(_,i)=>({x:(i*127)%worldWidth,y:30+(i*43)%220,s:2+(i%3)}));
+
+  function show(id){$(id).style.display="flex"}
+  function hide(id){$(id).style.display="none"}
+  function setStats(){$("stars").textContent=stars;$("score").textContent=score;$("missionLabel").textContent=`MISI ${Math.min(nextQ+1,7)} / 7`;}
+  function reset(){
+    score=0;stars=0;nextQ=0;cameraX=0;running=false;paused=false;gameOver=false;
+    player.x=55;player.y=350;player.vx=0;player.vy=0;player.onGround=false;
+    portals.forEach(p=>p.done=false);setStats();hide("questionScreen");hide("endScreen");show("startScreen");
+  }
+  function start(){
+    playerName=($("playerName").value.trim()||"Wira Cilik").slice(0,20);
+    hide("startScreen");hide("endScreen");running=true;paused=false;lastTime=performance.now();
+    requestAnimationFrame(loop);
+  }
+  function openQuestion(i){
+    if(paused||portals[i].done)return;
+    paused=true;
+    const q=questions[i];
+    $("qTag").textContent=`CABARAN ${i+1} / 7 • ${q.topic}`;
+    $("qTitle").textContent=`Cabaran ${i+1}: Buktikan Kuasa Wira!`;
+    $("qText").textContent=q.text;
+    $("feedback").textContent="";
+    $("continueBtn").style.display="none";
+    const area=$("answers");area.innerHTML="";
+    q.choices.forEach((choice,j)=>{
+      const b=document.createElement("button");b.className="answer";b.textContent=String.fromCharCode(65+j)+". "+choice;
+      b.addEventListener("click",()=>{
+        if(area.dataset.answered==="yes")return;
+        area.dataset.answered="yes";
+        [...area.children].forEach(x=>x.disabled=true);
+        if(j===q.correct){score+=100;stars++;b.style.borderColor="#ffe36e";b.style.background="#155d64";$("feedback").textContent="⭐ BETUL! "+q.explain;}
+        else {$("feedback").textContent="Belum tepat. "+q.explain;area.children[q.correct].style.borderColor="#ffe36e";}
+        setStats();portals[i].done=true;$("continueBtn").style.display="inline-block";
+        $("continueBtn").textContent=i===6?"LIHAT GANJARAN 🏆":"TERUSKAN MISI ➜";
+      });
+      area.appendChild(b);
+    });
+    area.dataset.answered="no";show("questionScreen");
+  }
+  function continueGame(){
+    hide("questionScreen");paused=false;nextQ++;
+    if(nextQ>=7){finish();return;}
+    player.x=Math.max(player.x,portals[nextQ-1].x+80);
+  }
+  function finish(){
+    running=false;gameOver=true;show("endScreen");
+    $("endMessage").textContent=`${playerName}, kamu telah menyelesaikan semua 7 cabaran di Bandar Pixel!`;
+    $("finalScore").textContent=`⭐ ${stars} / 7 BINTANG  •  🏅 ${score} MATA`;
+  }
+  function update(dt){
+    if(!running||paused)return;
+    const accel=0.62, max=4.3;
+    if(keys.left){player.vx-=accel;player.face=-1}
+    if(keys.right){player.vx+=accel;player.face=1}
+    if(!keys.left&&!keys.right)player.vx*=0.78;
+    player.vx=Math.max(-max,Math.min(max,player.vx));
+    if(keys.jump&&player.onGround){player.vy=-11.5;player.onGround=false}
+    keys.jump=false;
+    player.vy+=0.55;player.vy=Math.min(player.vy,12);
+    player.x+=player.vx;
+    player.x=Math.max(0,Math.min(worldWidth-player.w,player.x));
+    const oldY=player.y;player.y+=player.vy;player.onGround=false;
+    let overPit=false;
+    pits.forEach(p=>{if(player.x+player.w>p.x&&player.x<p.x+p.w)overPit=true});
+    if(player.y+player.h>=425&&!overPit&&oldY+player.h<=430){player.y=425-player.h;player.vy=0;player.onGround=true}
+    if(player.y>H+80){player.x=Math.max(30,player.x-120);player.y=320;player.vy=0}
+    // Touch a portal to open its question in order.
+    const p=portals[nextQ];
+    if(p&&!p.done&&player.x+player.w>p.x&&player.x<p.x+p.w&&player.y+player.h>p.y-8)openQuestion(nextQ);
+    cameraX=Math.max(0,Math.min(worldWidth-W,player.x-W*0.32));
+    setStats();
+  }
+  function rect(x,y,w,h,color){ctx.fillStyle=color;ctx.fillRect(Math.round(x),Math.round(y),w,h)}
+  function drawHero(x,y){
+    // Original pixel hero: navy hair, cyan/blue suit, red scarf, gold emblem.
+    rect(x+7,y,14,5,"#07102c");rect(x+4,y+5,20,6,"#152a59");
+    rect(x+7,y+8,14,7,"#f3c69c");rect(x+8,y+10,3,3,"#07102c");rect(x+17,y+10,3,3,"#07102c");
+    rect(x+4,y+15,20,13,"#1bc9ff");rect(x+1,y+16,5,12,"#ffe36e");rect(x+22,y+16,5,12,"#ffe36e");
+    rect(x+9,y+17,10,8,"#0a2d75");rect(x+12,y+19,4,4,"#ffe36e");
+    rect(x+5,y+28,8,7,"#e84768");rect(x+16,y+28,8,7,"#e84768");
+    rect(x+3,y+35,10,3,"#07102c");rect(x+16,y+35,10,3,"#07102c");
+    rect(x+(player.face===1?23:0),y+16,5,3,"#ff7188");
+  }
+  function drawPortal(p){
+    const x=p.x-cameraX,y=p.y;
+    rect(x-5,y-5,54,66,p.done?"#226b70":"#173d8b");
+    rect(x,y,44,56,p.done?"#37f0c0":"#39d9ff");
+    rect(x+5,y+5,34,46,p.done?"#0e5163":"#0b2054");
+    if(!p.done){rect(x+12,y+13,20,22,"#ffe36e");rect(x+17,y+18,10,12,"#e84768");}
+    else {rect(x+10,y+25,24,6,"#ffe36e");rect(x+18,y+17,7,22,"#ffe36e")}
+    ctx.fillStyle="#eef7ff";ctx.font="bold 12px monospace";ctx.textAlign="center";ctx.fillText(p.done?"✓":String(p.q+1),x+22,y-10);
+  }
+  function draw(){
+    // Sky gradient
+    const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#06143a");g.addColorStop(1,"#0b3c83");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+    starsDecor.forEach(s=>{rect(s.x-cameraX*0.25,s.y,s.s,s.s,"#9beaff")});
+    // Distant moon
+    rect(770-cameraX*.12,52,48,8,"#39d9ff");rect(782-cameraX*.12,40,24,32,"#39d9ff");
+    // Pixel city skyline
+    buildings.forEach((b,i)=>{let x=b.x-cameraX*.55;if(x<-100||x>W+100)return;rect(x,350-b.h,b.w,b.h,"#0a245a");rect(x+6,358-b.h,b.w-12,4,"#1760a5");for(let wy=370-b.h;wy<340;wy+=18)for(let wx=x+10;wx<x+b.w-8;wx+=16)rect(wx,wy,5,7,(Math.floor(wx+wy)%3===0)?"#39d9ff":"#244b87")});
+    // Ground
+    rect(0,425,W,75,"#07132e");rect(0,425,W,7,"#39d9ff");
+    for(let x=0;x<W;x+=32){rect(x-cameraX%32,443,18,4,"#123b73");rect(x-cameraX%32+7,465,8,4,"#123b73")}
+    // pits
+    pits.forEach(p=>{let x=p.x-cameraX;if(x>-100&&x<W+100){rect(x,425,p.w,75,"#020817");rect(x,425,p.w,5,"#ff4f72");rect(x+12,446,12,5,"#8b1f56");rect(x+50,466,12,5,"#8b1f56")}});
+    // small blocks
+    blocks.forEach(b=>{let x=b.x-cameraX;if(x>-40&&x<W+40){rect(x,b.y,b.w,b.h,"#17478a");rect(x,b.y,b.w,5,"#39d9ff");rect(x+6,b.y+10,5,5,"#ffe36e");rect(x+15,b.y+10,5,5,"#ffe36e")}});
+    portals.forEach(drawPortal);
+    // checkpoints on ground
+    portals.forEach(p=>{let x=p.x-cameraX;rect(x+18,420,8,5,p.done?"#ffe36e":"#ff4f72")});
+    drawHero(player.x-cameraX,player.y);
+    // current mission arrow
+    const p=portals[nextQ];if(p&&!paused){ctx.fillStyle="#ffe36e";ctx.beginPath();ctx.moveTo(p.x-cameraX+22,320);ctx.lineTo(p.x-cameraX+12,308);ctx.lineTo(p.x-cameraX+32,308);ctx.closePath();ctx.fill()}
+  }
+  function loop(t){
+    if(!running)return;
+    const dt=Math.min((t-lastTime)/16.67,2);lastTime=t;
+    update(dt);draw();
+    if(running)requestAnimationFrame(loop);
+  }
+  function keyDown(e){
+    const k=e.key.toLowerCase();
+    if(["arrowleft","arrowright","arrowup"," ","a","d","w"].includes(k))e.preventDefault();
+    if(k==="arrowleft"||k==="a")keys.left=true;
+    if(k==="arrowright"||k==="d")keys.right=true;
+    if(k===" "||k==="arrowup"||k==="w")keys.jump=true;
+  }
+  function keyUp(e){const k=e.key.toLowerCase();if(k==="arrowleft"||k==="a")keys.left=false;if(k==="arrowright"||k==="d")keys.right=false}
+  window.addEventListener("keydown",keyDown);window.addEventListener("keyup",keyUp);
+  document.querySelectorAll(".pad").forEach(btn=>{
+    const k=btn.dataset.key;
+    const down=e=>{e.preventDefault();if(k==="jump")keys.jump=true;else keys[k]=true};
+    const up=e=>{e.preventDefault();if(k!=="jump")keys[k]=false};
+    btn.addEventListener("pointerdown",down);btn.addEventListener("pointerup",up);btn.addEventListener("pointerleave",up);btn.addEventListener("pointercancel",up);
+  });
+  $("startBtn").addEventListener("click",start);
+  $("continueBtn").addEventListener("click",continueGame);
+  $("restartBtn").addEventListener("click",reset);
+  $("musicBtn").addEventListener("click",async()=>{
+    const audio=$("bgMusic"),url=$("musicUrl").value.trim();
+    if(url && audio.src!==url){audio.src=url;audio.load()}
+    if(!audio.src){$("musicUrl").focus();$("musicBtn").textContent="TAMBAH PAUTAN MP3 ↗";return}
+    if(audio.paused){try{await audio.play();$("musicBtn").textContent="Ⅱ JEDA LAGU"}catch(e){$("musicBtn").textContent="PAUTAN MP3 TIDAK DAPAT DIMAINKAN"}}else{audio.pause();$("musicBtn").textContent="♫ MAIN LAGU"}
+  });
+  $("musicUrl").addEventListener("change",()=>{if($("musicUrl").value.trim())$("musicBtn").textContent="♫ MAIN LAGU"});
+  draw();
+})();
+</script>
+</body>
+</html>
