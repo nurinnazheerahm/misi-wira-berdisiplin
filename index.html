@@ -106,13 +106,12 @@
     <div class="hint">Tip: Bergerak ke kanan, lompat atas titi, elakkan zombi dan kutip bintang bonus. Sentuh portal untuk menjawab soalan.</div>
     <div class="music">
       <button class="btn secondary" id="musicBtn">♫ MAIN LAGU</button>
-      <input id="musicUrl" type="url" placeholder="https://nurinnazheerahm.github.io/misi-wira-berdisiplin/-9123358570155822796%20(converted%20by%20happyscribe.com).mp3" aria-label="Pautan MP3">
     </div>
   </div>
   <div class="footer">Game pendidikan • Watak dan dunia pixel original • Muzik hanya dimainkan selepas ditekan</div>
 </div>
 
-<audio id="bgMusic" loop preload="none"></audio>
+<audio id="bgMusic" src="https://raw.githubusercontent.com/nurinnazheerahm/misi-wira-berdisiplin/main/-9123358570155822796%20(converted%20by%20happyscribe.com).mp3" loop preload="auto"></audio>
 
 <script>
 (() => {
@@ -338,12 +337,12 @@
   $("continueBtn").addEventListener("click",continueGame);
   $("restartBtn").addEventListener("click",reset);
   $("musicBtn").addEventListener("click",async()=>{
-    const audio=$("bgMusic"),url=$("musicUrl").value.trim();
-    if(url && audio.src!==url){audio.src=url;audio.load()}
-    if(!audio.src){$("musicUrl").focus();$("musicBtn").textContent="TAMBAH PAUTAN MP3 ↗";return}
-    if(audio.paused){try{await audio.play();$("musicBtn").textContent="Ⅱ JEDA LAGU"}catch(e){$("musicBtn").textContent="PAUTAN MP3 TIDAK DAPAT DIMAINKAN"}}else{audio.pause();$("musicBtn").textContent="♫ MAIN LAGU"}
+    const audio=$("bgMusic");
+    if(audio.paused){
+      try{await audio.play();$("musicBtn").textContent="Ⅱ JEDA LAGU"}
+      catch(e){$("musicBtn").textContent="LAGU TAK DAPAT DIMAINKAN — CUBA LAGI";console.error("Audio playback failed:",e)}
+    }else{audio.pause();$("musicBtn").textContent="♫ MAIN LAGU"}
   });
-  $("musicUrl").addEventListener("change",()=>{if($("musicUrl").value.trim())$("musicBtn").textContent="♫ MAIN LAGU"});
   draw();
 })();
 </script>
